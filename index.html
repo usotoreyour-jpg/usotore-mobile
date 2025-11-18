@@ -1,299 +1,122 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-<title>USOTOREスマホ版</title>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>USOTORE Mobile</title>
 
 <style>
 :root{
     --bg:#0a0a0a;
     --panel:#111;
     --text:#f3f4f6;
-    --win:#22c55e;
-    --lose:#ef4444;
-    --line:#3b82f6;
+    --btn-high:#22c55e;
+    --btn-low:#ef4444;
+    --btn-history:#3b82f6;
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
-body{
-    background:var(--bg);
-    color:var(--text);
-    font-family:"Rajdhani","Noto Sans JP",sans-serif;
-    overflow:hidden;
-}
+body{background:var(--bg);color:var(--text);font-family:"Rajdhani","Noto Sans JP",sans-serif;}
 
 #title{
     text-align:center;
-    font-size:32px;
+    font-size:22px;
+    letter-spacing:6px;
     font-weight:700;
-    letter-spacing:12px;
-    padding:14px;
-    text-shadow:0 0 16px rgba(255,255,150,.45);
+    padding:10px;
 }
 
-/* -------- Chart -------- */
 #chart{
     width:100vw;
-    height:62vh;
+    height:calc(100vh - 150px); /* ←重要: これで常に表示される */
     background:#000;
-    display:block;
 }
 
-/* -------- Price Badge -------- */
-#priceDisplay{
-    position:absolute;
-    right:8px;
-    top:65px;
-    background:rgba(0,0,0,.55);
-    border:1px solid rgba(255,255,255,.25);
-    padding:6px 12px;
-    border-radius:12px;
-    font-size:17px;
-    z-index:999;
-}
-
-/* -------- Time Display -------- */
-#timeDisplay{
-    position:absolute;
-    left:8px;
-    top:65px;
-    background:rgba(0,0,0,.5);
-    padding:6px 10px;
-    border-radius:10px;
-    font-size:15px;
-    opacity:.8;
-    z-index:999;
-}
-
-/* -------- Zoom buttons -------- */
-.zoom-panel{
-    position:absolute;
-    right:14px;
-    top:110px;
-    display:flex;
-    flex-direction:column;
-    gap:6px;
-    z-index:999;
-}
-.zoom-btn{
-    width:34px;
-    height:34px;
-    border-radius:999px;
-    border:1px solid rgba(255,255,255,.25);
-    background:rgba(0,0,0,.6);
-    color:#fff;
-    font-size:20px;
-    font-weight:700;
-}
-.zoom-btn:active{
-    transform:scale(.9);
-    opacity:.7;
-}
-
-/* -------- Buttons -------- */
-.btn-area{
-    position:absolute;
+/* ボタンエリア */
+#controls{
+    position:fixed;
     bottom:0;
     left:0;
-    width:100%;
+    width:100vw;
     display:flex;
-    padding:10px;
-    gap:8px;
+    gap:4px;
+    background:#000;
+    padding:6px;
 }
+
 button{
     flex:1;
     border:none;
-    border-radius:10px;
-    padding:14px;
-    font-weight:700;
-    font-size:20px;
-    color:#fff;
+    font-size:18px;
+    color:white;
+    padding:12px 0;
+    border-radius:6px;
 }
-.btn-high{ background:#10b981 }
-.btn-low{ background:#ef4444 }
-.btn-log{ background:#3b82f6 }
 
-/* -------- History -------- */
-#historyPanel{
+#high{ background:var(--btn-high); }
+#low{ background:var(--btn-low); }
+#history{ background:var(--btn-history); }
+
+/* ズームボタン */
+.zoom-btn{
     position:absolute;
-    bottom:0;left:0;width:100%;height:60vh;
-    background:#000;
-    border-top:2px solid #333;
-    transform:translateY(100%);
-    transition:.25s ease-out;
-    z-index:999;
-    overflow-y:auto;
-    font-size:15px;
-    padding:10px;
+    right:10px;
+    width:38px;height:38px;
+    border-radius:50%;
+    border:none;
+    font-size:26px;
+    color:white;
+    background:#222;
+    opacity:0.7;
 }
-.history-entry{
-    border-bottom:1px solid rgba(255,255,255,.2);
-    padding:8px 4px;
-}
-.history-entry.win{ color:#22c55e }
-.history-entry.lose{ color:#ef4444 }
-
+#zoom-in{ top:80px; }
+#zoom-out{ top:130px; }
 </style>
 </head>
+
 <body>
 
 <div id="title">USOTORE</div>
-<div id="priceDisplay"></div>
-<div id="timeDisplay"></div>
-<canvas id="chart"></canvas>
 
-<!-- Zoom buttons -->
-<div class="zoom-panel">
-  <button class="zoom-btn" onclick="zoomIn()">＋</button>
-  <button class="zoom-btn" onclick="zoomOut()">－</button>
+<div id="chart"></div>
+
+<button id="zoom-in" class="zoom-btn">+</button>
+<button id="zoom-out" class="zoom-btn">−</button>
+
+<div id="controls">
+    <button id="high">HIGH ↑</button>
+    <button id="low">LOW ↓</button>
+    <button id="history">履歴</button>
 </div>
 
-<!-- Buttons -->
-<div class="btn-area">
-  <button class="btn-high" onclick="enter('HIGH')">HIGH ↑</button>
-  <button class="btn-low" onclick="enter('LOW')">LOW ↓</button>
-  <button class="btn-log" onclick="toggleHistory()">履歴</button>
-</div>
-
-<!-- History -->
-<div id="historyPanel"></div>
+<!-- Lightweight Charts CDN -->
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 
 <script>
-/* ====== Settings ====== */
-let visibleCount = 90; // zoom base
-let chart, ctx;
-let candles=[];
-let history=[];
-let entry=null;
+// 1. チャート生成
+const chart = LightweightCharts.createChart(document.getElementById('chart'),{
+    layout:{ background:{color:'#000'}, textColor:'#fff' },
+    grid:{ horzLines:{visible:false}, vertLines:{visible:false} }
+});
 
-/* ====== Init ====== */
-window.onload=()=>{
-    chart=document.getElementById("chart");
-    ctx=chart.getContext("2d");
-    resize();
-    generate();
-    setInterval(tick,800);
-    render();
-    window.addEventListener('resize',resize);
-};
+const candleSeries = chart.addCandlestickSeries();
 
-/* ====== Generate Mock Data ====== */
-function generate(){
-    let price=100;
-    for(let i=0;i<200;i++){
-        let o=price;
-        let h=o+Math.random()*3;
-        let l=o-Math.random()*3;
-        let c=l+(Math.random()*(h-l));
-        price=c;
-        candles.push({
-            o,h,l,c,
-            t:Date.now()-((200-i)*1000)
-        });
-    }
-}
+// 2. テスト用データ（最低1本必要）
+candleSeries.setData([
+    { time: Math.floor(Date.now() / 1000), open: 100, high: 105, low: 99, close: 103 }
+]);
 
-/* ====== Tick ====== */
-function tick(){
-    let last=candles[candles.length-1].c;
-    let o=last;
-    let h=o+Math.random()*3;
-    let l=o-Math.random()*3;
-    let c=l+(Math.random()*(h-l));
-    candles.push({o,h,l,c,t:Date.now()});
-    render();
-}
+// 3. ズーム処理
+document.getElementById('zoom-in').onclick = () => chart.timeScale().zoomIn();
+document.getElementById('zoom-out').onclick = () => chart.timeScale().zoomOut();
 
-/* ====== Render ====== */
-function render(){
-    ctx.clearRect(0,0,chart.width,chart.height);
-
-    let total=candles.length;
-    let visible=Math.min(total,visibleCount);
-    let start=total-visible;
-    let slice=candles.slice(start);
-
-    let w=chart.width/visible;
-    let max=Math.max(...slice.map(x=>x.h));
-    let min=Math.min(...slice.map(x=>x.l));
-    let range=max-min;
-
-    slice.forEach((c,i)=>{
-        let x=i*w;
-        let highY=((max-c.h)/range)*chart.height;
-        let lowY=((max-c.l)/range)*chart.height;
-        let openY=((max-c.o)/range)*chart.height;
-        let closeY=((max-c.c)/range)*chart.height;
-
-        ctx.strokeStyle = c.c>=c.o ? "#10b981" : "#ef4444";
-        ctx.beginPath();
-        ctx.moveTo(x+w/2,highY);
-        ctx.lineTo(x+w/2,lowY);
-        ctx.stroke();
-
-        ctx.fillStyle=ctx.strokeStyle;
-        let top=Math.min(openY,closeY);
-        let bottom=Math.max(openY,closeY);
-        ctx.fillRect(x+1,top,w-2,Math.max(1,bottom-top));
-    });
-
-    // price
-    let last=slice[slice.length-1].c;
-    document.getElementById("priceDisplay").textContent=last.toFixed(3);
-
-    // time
-    let t=new Date(slice[slice.length-1].t);
-    document.getElementById("timeDisplay").textContent=
-      t.getHours().toString().padStart(2,'0')+":"+t.getMinutes().toString().padStart(2,'0');
-}
-
-/* ====== Zoom ====== */
-function zoomIn(){
-    visibleCount=Math.max(30,visibleCount-10);
-    render();
-}
-function zoomOut(){
-    visibleCount=Math.min(200,visibleCount+10);
-    render();
-}
-
-/* ====== Resize ====== */
-function resize(){
-    chart.width=window.innerWidth;
-    chart.height=window.innerHeight*0.62;
-    render();
-}
-
-/* ====== Entry ====== */
-function enter(type){
-    let last=candles[candles.length-1].c;
-    entry={type,price:last,t:Date.now()}
-}
-
-/* ====== History ====== */
-function toggleHistory(){
-    let panel=document.getElementById("historyPanel");
-    if(panel.style.transform=="translateY(0%)"){
-        panel.style.transform="translateY(100%)";
-    }else{
-        updateHistory();
-        panel.style.transform="translateY(0%)";
-    }
-}
-
-function updateHistory(){
-    let panel=document.getElementById("historyPanel");
-    panel.innerHTML='';
-    history.slice().reverse().forEach(h=>{
-        let div=document.createElement("div");
-        div.className="history-entry "+(h.win?"win":"lose");
-        div.textContent=`${h.type} ${h.result.toFixed(3)} (${h.time})`;
-        panel.appendChild(div);
-    });
-}
+// 4. ボタンの動作（今は仮処理）
+document.getElementById('high').onclick = () => alert("HIGH");
+document.getElementById('low').onclick = () => alert("LOW");
+document.getElementById('history').onclick = () => alert("履歴");
 </script>
+
 </body>
 </html>
+
 
