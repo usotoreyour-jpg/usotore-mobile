@@ -2,172 +2,298 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
 <title>USOTOREスマホ版</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 
 <style>
-  :root{
-    --bg:#0a0a0a;--panel:#0f0f10;--text:#f3f4f6;--win:#22c55e;--lose:#ef4444;--gold:#fbbf24;--cyan:#38bdf8;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--text);font-family:"Rajdhani","Noto Sans JP",sans-serif;overflow:hidden;}
-  #chart{width:100vw;height:60vh;background:#0b0b10;}
-  #title{text-align:center;font-size:24px;letter-spacing:6px;padding:12px 0;color:rgba(251,191,36,0.88);text-shadow:0 0 16px rgba(251,191,36,0.40);}
-  .pill{position:absolute;right:12px;top:40px;background:#0009;border:1px solid #374151;padding:4px 10px;border-radius:10px;font-size:13px}
-  #controls{
-    position:fixed;bottom:0;left:0;width:100%;background:rgba(15,15,16,.92);
-    display:flex;gap:6px;padding:8px;z-index:9999;
-  }
-  button{
-    flex:1;padding:13px;border:none;border-radius:10px;font-size:18px;font-weight:700;color:#fff;
-  }
-  .btnH{background:linear-gradient(90deg,#16a34a,#22c55e);}
-  .btnL{background:linear-gradient(90deg,#ef4444,#f43f5e);}
-  .btnHist{background:linear-gradient(90deg,#3b82f6,#60a5fa);}
-  #historyPanel{
-    position:fixed;bottom:0;left:0;width:100%;height:40vh;background:#0a0a0a;border-top:2px solid #334155;
-    transform:translateY(100%);transition:transform .25s ease-out;z-index:9000;padding:8px;overflow-y:auto;font-size:14px;
-  }
-  #historyPanel.show{transform:translateY(0);}
-  .history-entry{border-bottom:1px solid #334155;padding:6px 0;line-height:1.4;}
-  .history-entry.win{color:rgba(34,197,94,.85);}
-  .history-entry.lose{color:rgba(239,68,68,.85);}
+:root{
+    --bg:#0a0a0a;
+    --panel:#111;
+    --text:#f3f4f6;
+    --win:#22c55e;
+    --lose:#ef4444;
+    --line:#3b82f6;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Rajdhani","Noto Sans JP",sans-serif;
+    overflow:hidden;
+}
+
+#title{
+    text-align:center;
+    font-size:32px;
+    font-weight:700;
+    letter-spacing:12px;
+    padding:14px;
+    text-shadow:0 0 16px rgba(255,255,150,.45);
+}
+
+/* -------- Chart -------- */
+#chart{
+    width:100vw;
+    height:62vh;
+    background:#000;
+    display:block;
+}
+
+/* -------- Price Badge -------- */
+#priceDisplay{
+    position:absolute;
+    right:8px;
+    top:65px;
+    background:rgba(0,0,0,.55);
+    border:1px solid rgba(255,255,255,.25);
+    padding:6px 12px;
+    border-radius:12px;
+    font-size:17px;
+    z-index:999;
+}
+
+/* -------- Time Display -------- */
+#timeDisplay{
+    position:absolute;
+    left:8px;
+    top:65px;
+    background:rgba(0,0,0,.5);
+    padding:6px 10px;
+    border-radius:10px;
+    font-size:15px;
+    opacity:.8;
+    z-index:999;
+}
+
+/* -------- Zoom buttons -------- */
+.zoom-panel{
+    position:absolute;
+    right:14px;
+    top:110px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    z-index:999;
+}
+.zoom-btn{
+    width:34px;
+    height:34px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,.25);
+    background:rgba(0,0,0,.6);
+    color:#fff;
+    font-size:20px;
+    font-weight:700;
+}
+.zoom-btn:active{
+    transform:scale(.9);
+    opacity:.7;
+}
+
+/* -------- Buttons -------- */
+.btn-area{
+    position:absolute;
+    bottom:0;
+    left:0;
+    width:100%;
+    display:flex;
+    padding:10px;
+    gap:8px;
+}
+button{
+    flex:1;
+    border:none;
+    border-radius:10px;
+    padding:14px;
+    font-weight:700;
+    font-size:20px;
+    color:#fff;
+}
+.btn-high{ background:#10b981 }
+.btn-low{ background:#ef4444 }
+.btn-log{ background:#3b82f6 }
+
+/* -------- History -------- */
+#historyPanel{
+    position:absolute;
+    bottom:0;left:0;width:100%;height:60vh;
+    background:#000;
+    border-top:2px solid #333;
+    transform:translateY(100%);
+    transition:.25s ease-out;
+    z-index:999;
+    overflow-y:auto;
+    font-size:15px;
+    padding:10px;
+}
+.history-entry{
+    border-bottom:1px solid rgba(255,255,255,.2);
+    padding:8px 4px;
+}
+.history-entry.win{ color:#22c55e }
+.history-entry.lose{ color:#ef4444 }
+
 </style>
 </head>
-
 <body>
 
-<div id="title">ＵＳＯＴＯＲＥ</div>
-<div id="rateText" class="pill">---</div>
+<div id="title">USOTORE</div>
+<div id="priceDisplay"></div>
+<div id="timeDisplay"></div>
 <canvas id="chart"></canvas>
 
-<!-- 履歴 -->
-<div id="historyPanel"></div>
-
-<!-- 固定ボタン -->
-<div id="controls">
-  <button class="btnH" onclick="enter('HIGH')">HIGH ↑</button>
-  <button class="btnL" onclick="enter('LOW')">LOW ↓</button>
-  <button class="btnHist" onclick="toggleHistory()">履歴</button>
+<!-- Zoom buttons -->
+<div class="zoom-panel">
+  <button class="zoom-btn" onclick="zoomIn()">＋</button>
+  <button class="zoom-btn" onclick="zoomOut()">－</button>
 </div>
 
+<!-- Buttons -->
+<div class="btn-area">
+  <button class="btn-high" onclick="enter('HIGH')">HIGH ↑</button>
+  <button class="btn-low" onclick="enter('LOW')">LOW ↓</button>
+  <button class="btn-log" onclick="toggleHistory()">履歴</button>
+</div>
+
+<!-- History -->
+<div id="historyPanel"></div>
+
 <script>
-const cvs=document.getElementById('chart'),ctx=cvs.getContext('2d');
-function resize(){cvs.width=innerWidth;cvs.height=innerHeight*0.6;}
-addEventListener('resize',resize);resize();
+/* ====== Settings ====== */
+let visibleCount = 90; // zoom base
+let chart, ctx;
+let candles=[];
+let history=[];
+let entry=null;
 
-let rate=150.000,balance=1000000,payout=1.8,stake=1000,candles=[],tickets=[],volBase=0.004,last=performance.now();
-const baseVisible=90;
+/* ====== Init ====== */
+window.onload=()=>{
+    chart=document.getElementById("chart");
+    ctx=chart.getContext("2d");
+    resize();
+    generate();
+    setInterval(tick,800);
+    render();
+    window.addEventListener('resize',resize);
+};
 
-// 初期データ
-for(let i=0;i<200;i++){ const prev=i?candles[i-1].c:rate;
-  const c=+(prev*(1+(Math.random()-0.5)*volBase)).toFixed(3);
-  const spread=Math.abs(c-prev)*0.6+0.005;
-  candles.push({o:prev,h:Math.max(prev,c)+spread,l:Math.min(prev,c)-spread,c});
-  rate=c;
-}
-
-function getExpirySeconds(){return 60;} // 判定時間：1分固定（必要に応じて変更可）
-
-let id=1;
-function enter(dir){
-  const sec=getExpirySeconds();
-  tickets.push({id:id++,dir,entry:rate,expiry:sec,end:Date.now()+sec*1000,state:'pending'});
-  render();
-}
-
-// 更新処理
-function step(){rate = +(rate* (1+(Math.random()-0.5)*volBase)).toFixed(3);}
-function push(){
-  const o=candles.length?candles[candles.length-1].c:rate;
-  step(); const c=rate;
-  const spread=Math.abs(c-o)*0.6+0.005;
-  candles.push({o,h:Math.max(o,c)+spread,l:Math.min(o,c)-spread,c});
-  if(candles.length>400) candles.shift();
-}
-
-// 決済 & 履歴
-const historyPanel=document.getElementById("historyPanel");
-function addHistory(entry){
-  const div=document.createElement('div');
-  div.classList.add('history-entry');
-  if(entry.state==='win') div.classList.add('win');
-  if(entry.state==='lose') div.classList.add('lose');
-  div.innerHTML=`
-    <strong>${entry.dir}</strong> @ ${entry.entry.toFixed(3)}<br>
-    結果：${entry.state.toUpperCase()}<br>
-    判定時刻：${new Date(entry.end).toLocaleTimeString()}
-  `;
-  historyPanel.prepend(div);
-}
-
-function settle(){
-  const now=Date.now();
-  for(const t of tickets){
-    if(t.state==='pending'&&now>=t.end){
-      const win=t.dir==='HIGH'?(rate>t.entry):(rate<t.entry);
-      t.state=win?'win':'lose';balance+=win?Math.round(stake*(payout-1)):-stake;
-      addHistory(t);
+/* ====== Generate Mock Data ====== */
+function generate(){
+    let price=100;
+    for(let i=0;i<200;i++){
+        let o=price;
+        let h=o+Math.random()*3;
+        let l=o-Math.random()*3;
+        let c=l+(Math.random()*(h-l));
+        price=c;
+        candles.push({
+            o,h,l,c,
+            t:Date.now()-((200-i)*1000)
+        });
     }
-  }
 }
 
+/* ====== Tick ====== */
+function tick(){
+    let last=candles[candles.length-1].c;
+    let o=last;
+    let h=o+Math.random()*3;
+    let l=o-Math.random()*3;
+    let c=l+(Math.random()*(h-l));
+    candles.push({o,h,l,c,t:Date.now()});
+    render();
+}
+
+/* ====== Render ====== */
 function render(){
-  const w=cvs.width,h=cvs.height;
-  ctx.clearRect(0,0,w,h);
+    ctx.clearRect(0,0,chart.width,chart.height);
 
-  const total=candles.length;
-  const visible=Math.min(total,baseVisible);
-  const start=total-visible;
-  const slice=candles.slice(start);
+    let total=candles.length;
+    let visible=Math.min(total,visibleCount);
+    let start=total-visible;
+    let slice=candles.slice(start);
 
-  const highs=slice.map(c=>c.h),lows=slice.map(c=>c.l);
-  const vmin=Math.min(...lows),vmax=Math.max(...highs);
+    let w=chart.width/visible;
+    let max=Math.max(...slice.map(x=>x.h));
+    let min=Math.min(...slice.map(x=>x.l));
+    let range=max-min;
 
-  const x=i=>20+i*(w-40)/(visible-1);
-  const y=v=>h - (v-vmin)/(vmax-vmin+1e-9)*h;
-  const barW=(w-40)/visible*0.6;
+    slice.forEach((c,i)=>{
+        let x=i*w;
+        let highY=((max-c.h)/range)*chart.height;
+        let lowY=((max-c.l)/range)*chart.height;
+        let openY=((max-c.o)/range)*chart.height;
+        let closeY=((max-c.c)/range)*chart.height;
 
-  slice.forEach((c,i)=>{
-    const X=x(i),yo=y(c.o),yc=y(c.c),yh=y(c.h),yl=y(c.l);
-    const up=c.c>=c.o;
-    ctx.strokeStyle=up?'rgba(34,197,94,0.90)':'rgba(239,68,68,0.90)';
-    ctx.beginPath(); ctx.moveTo(X,yh); ctx.lineTo(X,yl); ctx.stroke();
-    ctx.fillStyle=up?'rgba(34,197,94,0.35)':'rgba(239,68,68,0.35)';
-    const top=Math.min(yo,yc),bot=Math.max(yo,yc),hh=Math.max(2,bot-top);
-    ctx.fillRect(X-barW/2,top,barW,hh);ctx.strokeRect(X-barW/2,top,barW,hh);
-  });
+        ctx.strokeStyle = c.c>=c.o ? "#10b981" : "#ef4444";
+        ctx.beginPath();
+        ctx.moveTo(x+w/2,highY);
+        ctx.lineTo(x+w/2,lowY);
+        ctx.stroke();
 
-  const curX=x(slice.length-1),curY=y(rate);
-  ctx.strokeStyle='rgba(251,191,36,0.6)';ctx.beginPath();ctx.moveTo(curX,0);ctx.lineTo(curX,h);ctx.stroke();
+        ctx.fillStyle=ctx.strokeStyle;
+        let top=Math.min(openY,closeY);
+        let bottom=Math.max(openY,closeY);
+        ctx.fillRect(x+1,top,w-2,Math.max(1,bottom-top));
+    });
 
-  for(const t of tickets){
-    if(t.state==='pending'){
-      const yy=y(t.entry);
-      ctx.setLineDash([6,6]);
-      ctx.strokeStyle=(t.dir==='HIGH')?'rgba(34,197,94,0.95)':'rgba(239,68,68,0.95)';
-      ctx.beginPath();ctx.moveTo(20,yy);ctx.lineTo(w-20,yy);ctx.stroke();
-      ctx.setLineDash([]);
-    }
-  }
+    // price
+    let last=slice[slice.length-1].c;
+    document.getElementById("priceDisplay").textContent=last.toFixed(3);
 
-  document.getElementById('rateText').textContent=rate.toFixed(3);
+    // time
+    let t=new Date(slice[slice.length-1].t);
+    document.getElementById("timeDisplay").textContent=
+      t.getHours().toString().padStart(2,'0')+":"+t.getMinutes().toString().padStart(2,'0');
 }
 
-function loop(ts){
-  if(ts-last>=1000){
-    last=ts;push();settle();render();
-  }
-  requestAnimationFrame(loop);
+/* ====== Zoom ====== */
+function zoomIn(){
+    visibleCount=Math.max(30,visibleCount-10);
+    render();
 }
-render();requestAnimationFrame(loop);
+function zoomOut(){
+    visibleCount=Math.min(200,visibleCount+10);
+    render();
+}
 
-// 履歴表示切替
+/* ====== Resize ====== */
+function resize(){
+    chart.width=window.innerWidth;
+    chart.height=window.innerHeight*0.62;
+    render();
+}
+
+/* ====== Entry ====== */
+function enter(type){
+    let last=candles[candles.length-1].c;
+    entry={type,price:last,t:Date.now()}
+}
+
+/* ====== History ====== */
 function toggleHistory(){
-  historyPanel.classList.toggle('show');
+    let panel=document.getElementById("historyPanel");
+    if(panel.style.transform=="translateY(0%)"){
+        panel.style.transform="translateY(100%)";
+    }else{
+        updateHistory();
+        panel.style.transform="translateY(0%)";
+    }
+}
+
+function updateHistory(){
+    let panel=document.getElementById("historyPanel");
+    panel.innerHTML='';
+    history.slice().reverse().forEach(h=>{
+        let div=document.createElement("div");
+        div.className="history-entry "+(h.win?"win":"lose");
+        div.textContent=`${h.type} ${h.result.toFixed(3)} (${h.time})`;
+        panel.appendChild(div);
+    });
 }
 </script>
-
 </body>
 </html>
+
