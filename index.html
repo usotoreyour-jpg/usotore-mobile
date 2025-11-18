@@ -10,214 +10,151 @@
   :root{
     --bg:#0a0a0a;--panel:#0f0f10;--text:#f3f4f6;--win:#22c55e;--lose:#ef4444;--gold:#fbbf24;--cyan:#38bdf8;
   }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:"Rajdhani","Noto Sans JP",sans-serif;overflow:hidden;}
-  #chart{width:100vw;height:58vh;background:#0b0b10;display:block;}
-  #title{text-align:center;position:relative;top:4px;font-size:28px;letter-spacing:8px;font-weight:700;color:rgba(251,191,36,0.88);text-shadow:0 0 20px rgba(251,191,36,0.35);}
-
-  .pill{
-    position:absolute;right:12px;top:8px;background:rgba(0,0,0,.55);
-    border:1px solid #374151;padding:6px;border-radius:10px;font-size:13px
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:"Rajdhani","Noto Sans JP",sans-serif;overflow:hidden;}
+  #chart{width:100vw;height:60vh;background:#0b0b10;}
+  #title{text-align:center;font-size:24px;letter-spacing:6px;padding:12px 0;color:rgba(251,191,36,0.88);text-shadow:0 0 16px rgba(251,191,36,0.40);}
+  .pill{position:absolute;right:12px;top:40px;background:#0009;border:1px solid #374151;padding:4px 10px;border-radius:10px;font-size:13px}
+  #controls{
+    position:fixed;bottom:0;left:0;width:100%;background:rgba(15,15,16,.92);
+    display:flex;gap:6px;padding:8px;z-index:9999;
   }
-
-  .hud{background:rgba(0,0,0,.55);border:1px solid #374151;
-    border-radius:10px;padding:10px;margin:6px auto;width:92%;backdrop-filter:blur(4px);font-size:14px}
-
-  .row{display:flex;gap:8px;align-items:center;margin-top:6px}
-  .row label{min-width:92px;font-size:12px;color:#cbd5e1}
-  .row input,.row select{flex:1;padding:8px;border-radius:8px;border:1px solid #334155;background:#0e0e12;color:#fff;font-size:14px}
-
-  .btn{flex:1;padding:10px;border:none;border-radius:10px;font-weight:800;color:#111}
-  .btnH{background:linear-gradient(90deg,#16a34a,#22c55e)}
-  .btnL{background:linear-gradient(90deg,#ef4444,#f43f5e)}
-
-  .list{margin-top:8px;max-height:118px;overflow:auto;border-top:1px dashed #334155;padding-top:6px;font-size:12px}
-  .ticket{display:flex;justify-content:space-between;padding:6px 8px;border:1px solid #334155;
-          border-radius:6px;margin-bottom:6px;background:#0c0c12}
-  .ticket.win{border-color:rgba(34,197,94,.6)}.ticket.lose{border-color:rgba(239,68,68,.6)}
-
-  /* 履歴ログ領域 */
-  .history-log-container{
-    background:#0a0a0a;border-top:1px solid #334155;font-size:12px;
-    height:24vh;overflow-y:auto;padding:8px;
+  button{
+    flex:1;padding:13px;border:none;border-radius:10px;font-size:18px;font-weight:700;color:#fff;
   }
-  .history-entry{border-bottom:1px solid #334155;padding:6px 0}
-  .history-entry.win{color:rgba(34,197,94,.85)}
-  .history-entry.lose{color:rgba(239,68,68,.85)}
+  .btnH{background:linear-gradient(90deg,#16a34a,#22c55e);}
+  .btnL{background:linear-gradient(90deg,#ef4444,#f43f5e);}
+  .btnHist{background:linear-gradient(90deg,#3b82f6,#60a5fa);}
+  #historyPanel{
+    position:fixed;bottom:0;left:0;width:100%;height:40vh;background:#0a0a0a;border-top:2px solid #334155;
+    transform:translateY(100%);transition:transform .25s ease-out;z-index:9000;padding:8px;overflow-y:auto;font-size:14px;
+  }
+  #historyPanel.show{transform:translateY(0);}
+  .history-entry{border-bottom:1px solid #334155;padding:6px 0;line-height:1.4;}
+  .history-entry.win{color:rgba(34,197,94,.85);}
+  .history-entry.lose{color:rgba(239,68,68,.85);}
 </style>
 </head>
 
 <body>
+
 <div id="title">ＵＳＯＴＯＲＥ</div>
-<div class="pill" id="rateText">---</div>
+<div id="rateText" class="pill">---</div>
 <canvas id="chart"></canvas>
 
-<div class="hud">
-  <h3 style="margin:0 0 4px;">取引</h3>
-  <div class="row">
-    <label>判定時間</label>
-    <select id="expirySelect">
-      <option value="0.5">30秒</option>
-      <option value="1">1分</option>
-      <option value="5">5分</option>
-      <option value="10">10分</option>
-      <option value="20">20分</option>
-      <option value="custom">任意（分）</option>
-    </select>
-  </div>
-  <div class="row" id="customRow" style="display:none;">
-    <label>任意分数</label><input id="expiryCustomMin" type="number" value="3" min="0.5" max="240" step="0.5"><span>分</span>
-  </div>
-  <div class="row"><label>賭け金</label><input id="stake" type="number" value="1000" min="100" step="100"></div>
-  <div class="row"><label>ペイアウト</label><input id="payout" type="number" value="1.8" step="0.05"></div>
-  <div class="row" style="gap:6px;"><button class="btn btnH" onclick="enter('HIGH')">HIGH ↑</button><button class="btn btnL" onclick="enter('LOW')">LOW ↓</button></div>
-  <div class="row"><label>残高</label><div id="bal">¥1,000,000</div></div>
-  <div class="list" id="tickets"></div>
+<!-- 履歴 -->
+<div id="historyPanel"></div>
+
+<!-- 固定ボタン -->
+<div id="controls">
+  <button class="btnH" onclick="enter('HIGH')">HIGH ↑</button>
+  <button class="btnL" onclick="enter('LOW')">LOW ↓</button>
+  <button class="btnHist" onclick="toggleHistory()">履歴</button>
 </div>
 
-<!-- 🆕 履歴ログ -->
-<div id="historyLog" class="history-log-container"></div>
-
 <script>
-// ===== チャート描画とロジック部分 =====
 const cvs=document.getElementById('chart'),ctx=cvs.getContext('2d');
-function resize(){cvs.width=innerWidth;cvs.height=innerHeight*0.58;}
+function resize(){cvs.width=innerWidth;cvs.height=innerHeight*0.6;}
 addEventListener('resize',resize);resize();
 
 let rate=150.000,balance=1000000,payout=1.8,stake=1000,candles=[],tickets=[],volBase=0.004,last=performance.now();
 const baseVisible=90;
 
 // 初期データ
-for(let i=0;i<200;i++){
-  const prev=i?candles[i-1].c:rate;
+for(let i=0;i<200;i++){ const prev=i?candles[i-1].c:rate;
   const c=+(prev*(1+(Math.random()-0.5)*volBase)).toFixed(3);
   const spread=Math.abs(c-prev)*0.6+0.005;
   candles.push({o:prev,h:Math.max(prev,c)+spread,l:Math.min(prev,c)-spread,c});
   rate=c;
 }
 
-// UI
-const sel=document.getElementById('expirySelect'),customRow=document.getElementById('customRow'),customMin=document.getElementById('expiryCustomMin');
-sel.onchange=()=>customRow.style.display=sel.value==='custom'?'':'none';
-document.getElementById('stake').onchange=(e)=>stake=+e.target.value||1000;
-document.getElementById('payout').onchange=(e)=>payout=+e.target.value||1.8;
+function getExpirySeconds(){return 60;} // 判定時間：1分固定（必要に応じて変更可）
 
-// 判定時間計算
-function getExpirySeconds(){
-  return sel.value==='custom'
-    ? Math.max(30,(+customMin.value||1)*60)
-    : sel.value*60;
-}
-
-// 履歴パネル
-const historyLog=document.getElementById("historyLog");
 let id=1;
-
-function addHistory(entry){
-  const div=document.createElement('div');
-  div.classList.add('history-entry');
-  div.setAttribute("data-id", entry.id);
-  div.innerHTML=`
-    <strong>${entry.dir}</strong> @ ${entry.entry.toFixed(3)}<br>
-    状態：判定中...<br>
-    判定終了：${new Date(entry.end).toLocaleTimeString()}
-  `;
-  historyLog.prepend(div);
-}
-
-function updateHistory(entry){
-  const target=historyLog.querySelector(`[data-id="${entry.id}"]`);
-  if(!target)return;
-  target.className=`history-entry ${entry.state}`;
-  target.innerHTML=`
-    <strong>${entry.dir}</strong> @ ${entry.entry.toFixed(3)}<br>
-    結果：${entry.state.toUpperCase()}<br>
-    現在値：${rate.toFixed(3)}<br>
-    判定終了：${new Date(entry.end).toLocaleTimeString()}
-  `;
-}
-
-// 取引
 function enter(dir){
-  if(balance<stake){alert('残高不足です');return;}
   const sec=getExpirySeconds();
-  const entry={id:id++,dir,entry:rate,expiry:sec,end:Date.now()+sec*1000,state:'pending'};
-  tickets.push(entry);
-  addHistory(entry); // 🆕 判定前から表示
+  tickets.push({id:id++,dir,entry:rate,expiry:sec,end:Date.now()+sec*1000,state:'pending'});
   render();
 }
 
-// 判定
-function settle(){
-  const now=Date.now();
-  for(const t of tickets){
-    if(t.state==='pending'&&now>=t.end){
-      const win=t.dir==='HIGH'?(rate>t.entry):(rate<t.entry);
-      t.state=win?'win':'lose';
-      balance+=win?Math.round(stake*(payout-1)):-stake;
-      updateHistory(t); // 🆕 結果更新
-    }
-  }
-}
-
-// チャートデータ更新
-function step(){rate=+(rate*(1+(Math.random()-0.5)*volBase)).toFixed(3);}
+// 更新処理
+function step(){rate = +(rate* (1+(Math.random()-0.5)*volBase)).toFixed(3);}
 function push(){
   const o=candles.length?candles[candles.length-1].c:rate;
   step(); const c=rate;
   const spread=Math.abs(c-o)*0.6+0.005;
   candles.push({o,h:Math.max(o,c)+spread,l:Math.min(o,c)-spread,c});
-  if(candles.length>400)candles.shift();
+  if(candles.length>400) candles.shift();
 }
 
-// チャート描画
+// 決済 & 履歴
+const historyPanel=document.getElementById("historyPanel");
+function addHistory(entry){
+  const div=document.createElement('div');
+  div.classList.add('history-entry');
+  if(entry.state==='win') div.classList.add('win');
+  if(entry.state==='lose') div.classList.add('lose');
+  div.innerHTML=`
+    <strong>${entry.dir}</strong> @ ${entry.entry.toFixed(3)}<br>
+    結果：${entry.state.toUpperCase()}<br>
+    判定時刻：${new Date(entry.end).toLocaleTimeString()}
+  `;
+  historyPanel.prepend(div);
+}
+
+function settle(){
+  const now=Date.now();
+  for(const t of tickets){
+    if(t.state==='pending'&&now>=t.end){
+      const win=t.dir==='HIGH'?(rate>t.entry):(rate<t.entry);
+      t.state=win?'win':'lose';balance+=win?Math.round(stake*(payout-1)):-stake;
+      addHistory(t);
+    }
+  }
+}
+
 function render(){
   const w=cvs.width,h=cvs.height;
   ctx.clearRect(0,0,w,h);
-  const total=candles.length,visible=Math.min(total,baseVisible),start=total-visible,slice=candles.slice(start);
+
+  const total=candles.length;
+  const visible=Math.min(total,baseVisible);
+  const start=total-visible;
+  const slice=candles.slice(start);
+
   const highs=slice.map(c=>c.h),lows=slice.map(c=>c.l);
   const vmin=Math.min(...lows),vmax=Math.max(...highs);
-  const x=i=>20+i*(w-40)/(visible-1),y=v=>h-(v-vmin)/(vmax-vmin+1e-9)*h;
+
+  const x=i=>20+i*(w-40)/(visible-1);
+  const y=v=>h - (v-vmin)/(vmax-vmin+1e-9)*h;
   const barW=(w-40)/visible*0.6;
 
   slice.forEach((c,i)=>{
     const X=x(i),yo=y(c.o),yc=y(c.c),yh=y(c.h),yl=y(c.l);
     const up=c.c>=c.o;
-    ctx.strokeStyle=up?'rgba(34,197,94,0.9)':'rgba(239,68,68,0.9)';
-    ctx.beginPath();ctx.moveTo(X,yh);ctx.lineTo(X,yl);ctx.stroke();
+    ctx.strokeStyle=up?'rgba(34,197,94,0.90)':'rgba(239,68,68,0.90)';
+    ctx.beginPath(); ctx.moveTo(X,yh); ctx.lineTo(X,yl); ctx.stroke();
     ctx.fillStyle=up?'rgba(34,197,94,0.35)':'rgba(239,68,68,0.35)';
     const top=Math.min(yo,yc),bot=Math.max(yo,yc),hh=Math.max(2,bot-top);
     ctx.fillRect(X-barW/2,top,barW,hh);ctx.strokeRect(X-barW/2,top,barW,hh);
   });
 
-  // 現在レート
   const curX=x(slice.length-1),curY=y(rate);
-  ctx.strokeStyle='rgba(251,191,36,0.66)';
-  ctx.beginPath();ctx.moveTo(curX,0);ctx.lineTo(curX,h);ctx.stroke();
+  ctx.strokeStyle='rgba(251,191,36,0.6)';ctx.beginPath();ctx.moveTo(curX,0);ctx.lineTo(curX,h);ctx.stroke();
 
-  // エントリーライン
   for(const t of tickets){
     if(t.state==='pending'){
       const yy=y(t.entry);
       ctx.setLineDash([6,6]);
-      ctx.strokeStyle=t.dir==='HIGH'?'rgba(34,197,94,.95)':'rgba(239,68,68,.95)';
+      ctx.strokeStyle=(t.dir==='HIGH')?'rgba(34,197,94,0.95)':'rgba(239,68,68,0.95)';
       ctx.beginPath();ctx.moveTo(20,yy);ctx.lineTo(w-20,yy);ctx.stroke();
       ctx.setLineDash([]);
     }
   }
 
-  // UI更新
   document.getElementById('rateText').textContent=rate.toFixed(3);
-  document.getElementById('bal').textContent='¥'+balance.toLocaleString('ja-JP');
-  const list=document.getElementById('tickets');
-  list.innerHTML=tickets.slice(-4).reverse().map(t=>{
-    const remain=Math.max(0,Math.ceil((t.end-Date.now())/1000));
-    const txt=t.state==='pending'?(remain>=60?`${Math.floor(remain/60)}分${remain%60}秒`:`${remain}秒`):t.state.toUpperCase();
-    return `<div class="ticket ${t.state||''}"><div>${t.dir} @ ${t.entry.toFixed(3)}</div><div>${txt}</div></div>`;
-  }).join('');
 }
 
-// メインループ
 function loop(ts){
   if(ts-last>=1000){
     last=ts;push();settle();render();
@@ -225,6 +162,11 @@ function loop(ts){
   requestAnimationFrame(loop);
 }
 render();requestAnimationFrame(loop);
+
+// 履歴表示切替
+function toggleHistory(){
+  historyPanel.classList.toggle('show');
+}
 </script>
 
 </body>
