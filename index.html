@@ -1,122 +1,188 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>USOTORE Mobile</title>
+
+<!-- Lightweight Charts CDN -->
+<script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
 <style>
 :root{
     --bg:#0a0a0a;
     --panel:#111;
     --text:#f3f4f6;
-    --btn-high:#22c55e;
-    --btn-low:#ef4444;
-    --btn-history:#3b82f6;
+    --win:#22c55e;
+    --lose:#ef4444;
+    --line:#3b82f6;
 }
-
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:"Rajdhani","Noto Sans JP",sans-serif;}
 
-#title{
-    text-align:center;
-    font-size:22px;
-    letter-spacing:6px;
-    font-weight:700;
-    padding:10px;
-}
+#title{text-align:center;font-size:24px;letter-spacing:6px;font-weight:700;padding:12px;margin-top:4px}
 
 #chart{
     width:100vw;
-    height:calc(100vh - 150px); /* ←重要: これで常に表示される */
-    background:#000;
+    height:65vh;
 }
 
-/* ボタンエリア */
-#controls{
+.btn-area{
+    display:flex;
+    width:100%;
     position:fixed;
     bottom:0;
-    left:0;
-    width:100vw;
-    display:flex;
-    gap:4px;
-    background:#000;
-    padding:6px;
 }
 
-button{
+.btn{
     flex:1;
+    text-align:center;
+    padding:18px 0;
+    font-size:20px;
+    font-weight:600;
     border:none;
-    font-size:18px;
-    color:white;
-    padding:12px 0;
-    border-radius:6px;
+    outline:none;
+    cursor:pointer;
 }
 
-#high{ background:var(--btn-high); }
-#low{ background:var(--btn-low); }
-#history{ background:var(--btn-history); }
+.high{background:linear-gradient(90deg,#0b8a2a,#19c458)}
+.low{background:linear-gradient(90deg,#d54646,#ef4444)}
+.log{background:linear-gradient(90deg,#2563eb,#3b82f6)}
 
-/* ズームボタン */
-.zoom-btn{
+#zoom{
     position:absolute;
-    right:10px;
-    width:38px;height:38px;
-    border-radius:50%;
-    border:none;
-    font-size:26px;
+    right:4px;
+    top:140px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+.zoom-btn{
+    width:36px;height:36px;border-radius:8px;
+    border:1px solid #555;
     color:white;
     background:#222;
-    opacity:0.7;
+    font-size:20px;
+    line-height:36px;
+    text-align:center;
 }
-#zoom-in{ top:80px; }
-#zoom-out{ top:130px; }
+
+#historyPanel{
+    display:none;
+    position:fixed;
+    bottom:70px;
+    right:0;
+    width:100vw;
+    max-height:45vh;
+    overflow-y:auto;
+    background:#000d;
+    backdrop-filter:blur(6px);
+    border-top:1px solid #333;
+    padding:12px;
+}
+.logItem{padding:6px 0;border-bottom:1px solid #333;font-size:18px}
+.logItem.win{color:#22c55e}
+.logItem.lose{color:#ef4444}
 </style>
 </head>
-
 <body>
 
-<div id="title">USOTORE</div>
-
+<div id="title">U S O T O R E</div>
 <div id="chart"></div>
 
-<button id="zoom-in" class="zoom-btn">+</button>
-<button id="zoom-out" class="zoom-btn">−</button>
-
-<div id="controls">
-    <button id="high">HIGH ↑</button>
-    <button id="low">LOW ↓</button>
-    <button id="history">履歴</button>
+<!-- Zoom -->
+<div id="zoom">
+    <div class="zoom-btn" onclick="chart.timeScale().zoomIn()">＋</div>
+    <div class="zoom-btn" onclick="chart.timeScale().zoomOut()">－</div>
 </div>
 
-<!-- Lightweight Charts CDN -->
-<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<!-- History -->
+<div id="historyPanel"></div>
+
+<!-- Bottom Buttons -->
+<div class="btn-area">
+    <button class="btn high" onclick="enter('HIGH')">HIGH ↑</button>
+    <button class="btn low" onclick="enter('LOW')">LOW ↓</button>
+    <button class="btn log" onclick="toggleHistory()">履歴</button>
+</div>
 
 <script>
-// 1. チャート生成
-const chart = LightweightCharts.createChart(document.getElementById('chart'),{
-    layout:{ background:{color:'#000'}, textColor:'#fff' },
-    grid:{ horzLines:{visible:false}, vertLines:{visible:false} }
+/* ============ Chart Init ============ */
+const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+    layout:{ background:{color:'#000'}, textColor:'#fff'},
+    grid:{horzLines:{visible:false},vertLines:{visible:false}},
+    timeScale:{timeVisible:true, secondsVisible:true},
+    crosshair:{mode:1},
+    handleScroll:true,
+    handleScale:true,
 });
 
-const candleSeries = chart.addCandlestickSeries();
+const series = chart.addCandlestickSeries({
+    upColor:'#22c55e',
+    downColor:'#ef4444',
+    borderVisible:false,
+    wickUpColor:'#22c55e',
+    wickDownColor:'#ef4444',
+});
 
-// 2. テスト用データ（最低1本必要）
-candleSeries.setData([
-    { time: Math.floor(Date.now() / 1000), open: 100, high: 105, low: 99, close: 103 }
-]);
+/* ============ Generate Safe Initial Data ============ */
+const now = Math.floor(Date.now()/1000);
+let data=[];
+// 最低50本生成（ギザギザでも拡大で見やすくなる）
+for(let i=0;i<60;i++){
+    let base = 150 + Math.sin(i*0.3)*2;
+    data.push({
+        time: now-(60-i)*60,
+        open: base,
+        high: base+Math.random()*2,
+        low: base-Math.random()*2,
+        close: base+(Math.random()*2-1)
+    });
+}
+series.setData(data);
 
-// 3. ズーム処理
-document.getElementById('zoom-in').onclick = () => chart.timeScale().zoomIn();
-document.getElementById('zoom-out').onclick = () => chart.timeScale().zoomOut();
+/* ============ Functions ============ */
+const historyLog = [];
 
-// 4. ボタンの動作（今は仮処理）
-document.getElementById('high').onclick = () => alert("HIGH");
-document.getElementById('low').onclick = () => alert("LOW");
-document.getElementById('history').onclick = () => alert("履歴");
+function safeLast(){
+    const d = data[data.length-1];
+    if (!d) return null;
+    return d.close;
+}
+
+function enter(type){
+    const last = safeLast();
+    if(last == null) return;
+
+    const result = Math.random()>0.5 ? "WIN" : "LOSE";
+    historyLog.push({type,result,time:new Date().toLocaleTimeString()});
+    updateHistory();
+}
+
+function toggleHistory(){
+    const panel=document.getElementById("historyPanel");
+    panel.style.display = panel.style.display==="block" ? "none":"block";
+}
+
+function updateHistory(){
+    const panel=document.getElementById("historyPanel");
+    panel.innerHTML="";
+    for(const h of historyLog){
+        const div=document.createElement("div");
+        div.className=`logItem ${h.result==="WIN"?"win":"lose"}`;
+        div.textContent=`${h.time} ｜ ${h.type} ｜ ${h.result}`;
+        panel.appendChild(div);
+    }
+}
+
+/* ============ Resize ============ */
+window.addEventListener("resize",()=>{
+    chart.applyOptions({ width:chartContainerWidth(), height:chartHeight() });
+});
+
+function chartContainerWidth(){ return document.body.clientWidth; }
+function chartHeight(){ return window.innerHeight * 0.65; }
 </script>
 
 </body>
 </html>
-
-
